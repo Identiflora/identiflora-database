@@ -1,6 +1,6 @@
 CREATE DATABASE IF NOT EXISTS identiflora_testing_db;
 
-USE identiflora_testing_db;
+USE identiflora_db;
 
 CREATE TABLE user (
   user_id int
