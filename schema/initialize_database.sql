@@ -135,11 +135,29 @@ CREATE PROCEDURE check_incorrect_sub_exists (IN ident_id_in int)
     WHERE identification_id = ident_id_in;
   END//
 
+CREATE PROCEDURE check_plant_species_exists (IN scientific_name_in varchar(255))
+  BEGIN 
+    SELECT scientific_name FROM plant_species 
+    WHERE scientific_name = scientific_name_in;
+  END//
+  
 CREATE PROCEDURE add_incorrect_id (IN ident_id_in int, IN correct_species_id_in int, IN inc_species_id_in int)
   BEGIN
     INSERT INTO incorrect_identification
       (identification_id, correct_species_id, incorrect_species_id, time_submitted)
       VALUES (ident_id_in, correct_species_id_in, inc_species_id_in, NOW());
+  END//
+
+CREATE PROCEDURE add_plant_species (
+  IN common_name_in varchar(255),
+  IN scientific_name_in varchar(255),
+  IN genus_in varchar(255),
+  IN img_url_in varchar(512)
+)
+  BEGIN
+    INSERT INTO plant_species
+      (common_name, scientific_name, genus, img_url)
+      VALUES (common_name_in, scientific_name_in, genus_in, img_url_in);
   END//
 
 CREATE PROCEDURE get_plant_species_img_url (IN sci_name varchar(255))
