@@ -12,6 +12,7 @@ from typing import Optional, Tuple
 import pandas as pd
 import requests
 import numpy as np
+import json
 
 
 # Configurable paths/endpoints via environment.
@@ -43,12 +44,31 @@ def build_payload(row: pd.Series) -> dict:
     """Shape the payload for the API."""
     genus_val: Optional[str] = row["genus"] if row["genus"] else None
     common_name_val: Optional[str] = row["common_name"] if row["common_name"] else None
-    return {
-        "scientific_name": row["scientific_name"],
-        "common_name": common_name_val,
-        "genus": genus_val,
-        "img_url": row["img_url"],
-    }
+
+    if common_name_val and genus_val:
+        return {
+            "scientific_name": row["scientific_name"],
+            "common_name": common_name_val,
+            "genus": genus_val,
+            "img_url": row["img_url"],
+        }
+    elif common_name_val and not genus_val:
+        return {
+            "scientific_name": row["scientific_name"],
+            "common_name": common_name_val,
+            "img_url": row["img_url"],
+        }
+    elif not common_name_val and genus_val:
+        return {
+            "scientific_name": row["scientific_name"],
+            "genus": genus_val,
+            "img_url": row["img_url"],
+        }
+    else:
+        return {
+            "scientific_name": row["scientific_name"],
+            "img_url": row["img_url"],
+        }
 
 
 def post_species(session: requests.Session, payload: dict) -> Tuple[bool, str]:
@@ -65,7 +85,8 @@ def post_species(session: requests.Session, payload: dict) -> Tuple[bool, str]:
 def main() -> None:
     df = load_csv(CSV_PATH)
 
-    print(df)
+    # print(df)
+    # print()
 
     sent = 0
     skipped = 0
@@ -76,11 +97,13 @@ def main() -> None:
             if not valid_row(row):
                 skipped += 1
                 continue
+            row = row.fillna("NaN")
             payload = build_payload(row)
+            # print(payload)
             ok, msg = post_species(session, payload)
             if ok:
                 sent += 1
-                print(f"Sent {payload}")
+                # print(f"Sent {payload}")
             else:
                 failures += 1
                 # Keep a short log to stderr for visibility.
