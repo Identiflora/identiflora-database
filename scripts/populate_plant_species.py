@@ -11,6 +11,7 @@ from typing import Optional, Tuple
 
 import pandas as pd
 import requests
+import numpy as np
 
 
 # Configurable paths/endpoints via environment.
@@ -19,33 +20,32 @@ API_ENDPOINT = os.getenv(
     "PLANT_SPECIES_ENDPOINT",
     "https://identiflora-api.onrender.com/plant-species",
 )
-REQUEST_TIMEOUT = float(os.getenv("PLANT_SPECIES_TIMEOUT", "10"))
+REQUEST_TIMEOUT = float(os.getenv("PLANT_SPECIES_TIMEOUT", "120"))
 
 
 def load_csv(path: str = CSV_PATH) -> pd.DataFrame:
     """Load the plant_species CSV with expected columns."""
     df = pd.read_csv(path, dtype=str)
+
     expected = {"scientific_name", "common_name", "genus", "img_url"}
     missing = expected.difference(df.columns)
     if missing:
         raise ValueError(f"Missing expected columns in CSV: {missing}")
-    # Normalize whitespace and keep strings; empty strings remain empty.
-    for col in expected:
-        df[col] = df[col].astype(str).str.strip()
     return df
 
 
 def valid_row(row: pd.Series) -> bool:
     """Check if the row has the required fields to send (genus may be empty)."""
-    return bool(row["scientific_name"]) and bool(row["common_name"]) and bool(row["img_url"])
+    return bool(row["scientific_name"] != np.nan) and bool(row["img_url"] != np.nan)
 
 
 def build_payload(row: pd.Series) -> dict:
     """Shape the payload for the API."""
     genus_val: Optional[str] = row["genus"] if row["genus"] else None
+    common_name_val: Optional[str] = row["common_name"] if row["common_name"] else None
     return {
         "scientific_name": row["scientific_name"],
-        "common_name": row["common_name"],
+        "common_name": common_name_val,
         "genus": genus_val,
         "img_url": row["img_url"],
     }
@@ -64,26 +64,29 @@ def post_species(session: requests.Session, payload: dict) -> Tuple[bool, str]:
 
 def main() -> None:
     df = load_csv(CSV_PATH)
-    session = requests.Session()
+
+    print(df)
 
     sent = 0
     skipped = 0
     failures = 0
 
-    for _, row in df.iterrows():
-        if not valid_row(row):
-            skipped += 1
-            continue
-        payload = build_payload(row)
-        ok, msg = post_species(session, payload)
-        if ok:
-            sent += 1
-        else:
-            failures += 1
-            # Keep a short log to stderr for visibility.
-            print(f"Failed to send {payload['scientific_name']}: {msg}", file=sys.stderr)
+    with requests.Session() as session:
+        for _, row in df.iterrows():
+            if not valid_row(row):
+                skipped += 1
+                continue
+            payload = build_payload(row)
+            ok, msg = post_species(session, payload)
+            if ok:
+                sent += 1
+                print(f"Sent {payload}")
+            else:
+                failures += 1
+                # Keep a short log to stderr for visibility.
+                print(f"Failed to send {payload['scientific_name']}: {msg}", file=sys.stderr)
 
-    print(f"Completed. Sent: {sent}, skipped: {skipped}, failures: {failures}")
+        print(f"Completed. Sent: {sent}, skipped: {skipped}, failures: {failures}")
 
 
 if __name__ == "__main__":

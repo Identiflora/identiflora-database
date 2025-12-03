@@ -35,7 +35,7 @@ CREATE TABLE identification_submission (
 CREATE TABLE plant_species (
   species_id int
     AUTO_INCREMENT,
-  common_name varchar(255) NOT NULL,
+  common_name varchar(255),
   scientific_name varchar(255) NOT NULL,
   genus varchar(255),
   img_url varchar(512) NOT NULL,

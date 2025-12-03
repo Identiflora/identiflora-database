@@ -24,15 +24,6 @@ OUTPUT_PATH = os.getenv("PLANT_OUTPUT_PATH", "assets/plant_species.csv")
 # CHUNKSIZE_ENV = os.getenv("GBIF_CHUNKSIZE")
 # CHUNKSIZE: Optional[int] = int(CHUNKSIZE_ENV) if CHUNKSIZE_ENV else None
 
-# Simple canonicalizer: take first two tokens (genus + species), lowercased.
-def make_canonical_name(name: Optional[str]) -> Optional[str]:
-    if not isinstance(name, str):
-        return None
-    tokens = name.strip().split()
-    if len(tokens) < 2:
-        return None
-    return f"{tokens[0].lower()} {tokens[1].lower()}"
-
 def read_labels(path: str = INPUT_NAMES_PATH) -> pd.DataFrame:
     """Load scientific names from labels.txt into a DataFrame."""
     # Use python engine + sep=None so pandas can sniff delimiters; only keep first column.
@@ -46,8 +37,6 @@ def read_labels(path: str = INPUT_NAMES_PATH) -> pd.DataFrame:
     # Normalize whitespace to improve match rate and drop empty rows if present.
     labels["scientific_name"] = labels["scientific_name"].str.strip()
     labels = labels[labels["scientific_name"].notna() & (labels["scientific_name"] != "")]
-    labels["canonical_name"] = labels["scientific_name"].apply(make_canonical_name)
-    labels = labels[labels["canonical_name"].notna()]
 
     # print(labels.iloc[0])
 
@@ -97,7 +86,7 @@ def load_multimedia(path: str = GBIF_MULTIMEDIA_PATH) -> pd.DataFrame:
 
 def load_occurrence(path: str = GBIF_OCCURRENCE_PATH) -> pd.DataFrame:
     """Load occurrence data and deduplicate by gbifID."""
-    usecols = ["gbifID", "scientificName", "vernacularName", "genus"]
+    usecols = ["gbifID", "scientificName", "genericName", "genus"]
     occ = pd.read_csv(
         path,
         sep="\t",
@@ -105,8 +94,6 @@ def load_occurrence(path: str = GBIF_OCCURRENCE_PATH) -> pd.DataFrame:
         usecols=usecols,
         quoting=csv.QUOTE_NONE,
     )
-    # Add canonical name for matching (genus + species, lowercased).
-    occ["canonical_name"] = occ["scientificName"].apply(make_canonical_name)
     return occ
 
 
@@ -122,7 +109,7 @@ def load_instances(
     occ = load_occurrence(occurrence_path)
     merged = occ.merge(mm, on="gbifID", how="left")
     merged = merged.dropna(subset=["identifier"])
-    merged = merged.drop_duplicates(subset=["canonical_name"], keep="first")
+    merged = merged.drop_duplicates(subset=["scientificName"], keep="first")
 
     return merged
 
@@ -133,24 +120,22 @@ def build_lookup(occ_df: pd.DataFrame) -> pd.DataFrame:
     """
     rename_map = {
         "scientificName": "scientific_name",
-        "vernacularName": "common_name",
+        "genericName": "common_name",
         "identifier": "img_url",
     }
     lookup = occ_df.rename(columns=rename_map)
     # Drop gbifID after join; not needed in the final output.
     lookup = lookup.drop(columns=["gbifID"], errors="ignore")
-    # ensures order of columns is consistent; keep canonical_name for joining
-    lookup = lookup[["canonical_name", "scientific_name", "common_name", "genus", "img_url"]]
+    # ensures order of columns is consistent
+    lookup = lookup[["scientific_name", "common_name", "genus", "img_url"]]
     # ensure no columns have null scientific_name
-    lookup = lookup[lookup["scientific_name"].notna() & lookup["canonical_name"].notna()]
+    lookup = lookup.dropna(subset=["scientific_name"])
     return lookup
 
 
 def enrich_labels(labels: pd.DataFrame, lookup: pd.DataFrame) -> pd.DataFrame:
     """Left-join labels with lookup info."""
-    merged = labels.merge(lookup, on="canonical_name", how="left")
-    # Drop canonical_name from output to keep requested schema.
-    merged = merged.drop(columns=["canonical_name"], errors="ignore")
+    merged = labels.merge(lookup, on="scientific_name", how="left")
     return merged
 
 

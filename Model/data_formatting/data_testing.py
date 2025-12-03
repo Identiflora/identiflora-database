@@ -27,16 +27,17 @@ import requests, itertools
 #         seen.add(b["name"])
 # print("Distinct species (by speciesKey):", len(seen))
 
-occ_1 = pd.read_csv(os.path.join(data_file_path, "occurrence.txt"), sep="\t", nrows=100, dtype=str, low_memory=False, usecols=['gbifID', 
-                                                                                                                               'license', 
-                                                                                                                               'scientificName', 
-                                                                                                                               'family',
-                                                                                                                               'genus',
-                                                                                                                               'genericName',
-                                                                                                                               'datasetKey',
-                                                                                                                               'mediaType',
-                                                                                                                               ])
-mm_1  = pd.read_csv(os.path.join(data_file_path, "multimedia.txt"), sep="\t", nrows=100, dtype=str, low_memory=False, usecols=['gbifID',
+# occ_1 = pd.read_csv(os.path.join(data_file_path, "occurrence.txt"), sep="\t", nrows=100, dtype=str, low_memory=False, usecols=['gbifID', 
+#                                                                                                                                'license', 
+#                                                                                                                                'scientificName', 
+#                                                                                                                                'family',
+#                                                                                                                                'genus',
+#                                                                                                                                'genericName',
+#                                                                                                                                'datasetKey',
+#                                                                                                                                'mediaType',
+#                                                                                                                                ])
+occ_1 = pd.read_csv(os.path.join(data_file_path, "occurrence.txt"), sep="\t", nrows=10000, dtype=str, low_memory=False)
+mm_1  = pd.read_csv(os.path.join(data_file_path, "multimedia.txt"), sep="\t", nrows=10000, dtype=str, low_memory=False, usecols=['gbifID',
                                                                                                                                'type',
                                                                                                                                'format',
                                                                                                                                'identifier',
@@ -46,27 +47,13 @@ mm_1  = pd.read_csv(os.path.join(data_file_path, "multimedia.txt"), sep="\t", nr
 
 joined = pd.merge(mm_1, occ_1, left_on='gbifID', right_on='gbifID', how='inner')
 
-# print("occurence first row:")
-# # print(occ_1.to_dict(orient="records")[0])
-# row_0_o = occ_1.iloc[0]
-# for key, value in row_0_o.items():
-#     if not pd.isna(value):
-#         print(f"{key}: {value}")
-# print()
-# print("\nmultimedia first row:")
-# row_0_m = mm_1.iloc[0]
-# for key, value in row_0_m.items():
-#     if not pd.isna(value):
-#         print(f"{key}: {value}")
+cols = [c for c in joined.columns if "Name" in c]
 
-# print()
-# print("\nJoined first row")
-# row_0_j = joined.iloc[0]
-# for key, value in row_0_j.items():
-#     if not pd.isna(value):
-#         print(f"{key}: {value}")
+joined = joined.dropna(subset=["vernacularName"])
 
-print(type(joined))
 for i in range(len(joined)):
-    row = joined.iloc[i]
-    print(row["identifier"])
+    print(joined.loc[i, cols])
+# print(type(joined))
+# for i in range(len(joined)):
+#     row = joined.iloc[i]
+#     print(row["identifier"])
