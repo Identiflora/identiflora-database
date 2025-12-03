@@ -207,5 +207,10 @@ CREATE PROCEDURE login_user (IN user_email_in varchar(225))
     WHERE email = user_email_in;
   END//
 
+CREATE PROCEDURE get_num_users ()
+  BEGIN
+    SELECT COUNT(*) FROM user;
+  END//
+
 delimiter ;
 
