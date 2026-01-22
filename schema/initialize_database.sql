@@ -1,4 +1,4 @@
-CREATE DATABASE IF NOT EXISTS identiflora_testing_db;
+CREATE DATABASE IF NOT EXISTS identiflora_db;
 
 USE identiflora_db;
 
@@ -9,7 +9,7 @@ CREATE TABLE user (
   email varchar(255) NOT NULL,
   password_hash varchar(255) NOT NULL,
   phone varchar(255),
-  global_points int,
+  global_points int NOT NULL DEFAULT 0,
   time_joined timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
   PRIMARY KEY (user_id),
@@ -195,9 +195,9 @@ CREATE PROCEDURE add_user (IN user_email_in varchar(225), IN username_in varchar
     WHERE username = username_in AND email = user_email_in AND password_hash = user_password_in;
   END//
 
-CREATE PROCEDURE get_user (IN user_id_in int)
+CREATE PROCEDURE get_user_leaderboard_info (IN user_id_in int)
   BEGIN
-    SELECT username FROM user
+    SELECT username, global_points FROM user
     WHERE user_id = user_id_in;
   END//
 
