@@ -2,16 +2,41 @@
 Below is all necessary information regarding the database design, implementation and use. All database testing has been done with MySQL Server 8.0.44
 
 ### Notes
-- The database will need to be hosted on someone's machine for the application to work properly. Doing this for the demo only should be sufficient for this semester. 
+- The database for the app is currently hosted on AWS. Testing can be done locally, instructions for both use cases are provided. 
 
 ### Running database instructions
 1. Download MySQL from here: https://dev.mysql.com/downloads/file/?id=546163, make sure you're downloading MySQL 8.0.44.0
 2. Follow the installer setup
-3. Run this command in terminal to connect to the server: '& "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -u root -p' (If you installed MySQL in a different location, use your path to mysql.exe)
+3. Run this command in terminal to connect to the server (If you installed MySQL in a different location, use your path to mysql.exe or mysql for Mac):
+   
+    - Windows:
+      - Local:
+   
+           ```
+           '& "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -u root -p'
+           ```
+           
+        - AWS:
+          
+          ```
+          '& "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -h identiflora.crwyoycsq98a.us-west-1.rds.amazonaws.com -P 3306 -u admin -p'
+          ```
 
-    On Mac: '/usr/local/mysql/bin/mysql -h identiflora.crwyoycsq98a.us-west-1.rds.amazonaws.com -P 3306 -u admin -p'
-4. To build the database on your machine, run: 'SOURCE initialize_database.sql;'
-5. The above format can be used to run any .sql file from the mysql terminal.
+       - On Mac:
+           - Local:
+           
+             ```
+             '/usr/local/mysql/bin/mysql -u root -p'
+             ```
+           - AWS:
+
+             ```
+             '/usr/local/mysql/bin/mysql -h identiflora.crwyoycsq98a.us-west-1.rds.amazonaws.com -P 3306 -u admin -p'
+             ```
+
+   
+5. To build the database on your machine, run: 'SOURCE initialize_database.sql;'
+6. The above format can be used to run any .sql file from the mysql terminal.
 
 ## Tables
 ### plant_species
@@ -111,6 +136,3 @@ Stores a user-reported incorrect prediction for a submission.
 **Additional Constraints**
 - Composite FK **(identification_id, incorrect_species_id)** must match an option in **identification_option** (ensures the reported incorrect species was one of the model's options for that submission).
 - Cascading deletes clean up rows if submissions or species are removed.
-
-### Testing script
-`Database/testing/database_testing.sql` seeds `identiflora_testing_db` with example data and exercises the full flow, including the new incorrect_identification FKs. You can run it after initializing the schema to verify constraints and sample inserts.
