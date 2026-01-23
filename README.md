@@ -13,25 +13,25 @@ Below is all necessary information regarding the database design, implementation
       - Local:
    
            ```
-           '& "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -u root -p'
+           & "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -u root -p
            ```
            
         - AWS:
           
           ```
-          '& "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -h identiflora.crwyoycsq98a.us-west-1.rds.amazonaws.com -P 3306 -u admin -p'
+          & "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -h identiflora.crwyoycsq98a.us-west-1.rds.amazonaws.com -P 3306 -u admin -p
           ```
 
        - On Mac:
            - Local:
            
              ```
-             '/usr/local/mysql/bin/mysql -u root -p'
+             /usr/local/mysql/bin/mysql -u root -p
              ```
            - AWS:
 
              ```
-             '/usr/local/mysql/bin/mysql -h identiflora.crwyoycsq98a.us-west-1.rds.amazonaws.com -P 3306 -u admin -p'
+             /usr/local/mysql/bin/mysql -h identiflora.crwyoycsq98a.us-west-1.rds.amazonaws.com -P 3306 -u admin -p
              ```
 
    
