@@ -14,6 +14,7 @@ import requests
 import numpy as np
 import json
 
+DEFAULT_API_ENDPOINT="https://localhost:8000"
 
 # Configurable paths/endpoints via environment.
 CSV_PATH = os.getenv("PLANT_SPECIES_CSV", "assets/plant_species.csv")
