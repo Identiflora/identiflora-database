@@ -14,15 +14,16 @@ import requests
 import numpy as np
 import json
 
-DEFAULT_API_ENDPOINT="https://localhost:8000"
+DEFAULT_API_ENDPOINT="http://localhost:8000/plant-species"
 
 # Configurable paths/endpoints via environment.
-CSV_PATH = os.getenv("PLANT_SPECIES_CSV", "assets/plant_species.csv")
-API_ENDPOINT = os.getenv(
-    "PLANT_SPECIES_ENDPOINT",
-    "https://identiflora-api.onrender.com/plant-species",
-)
-REQUEST_TIMEOUT = float(os.getenv("PLANT_SPECIES_TIMEOUT", "120"))
+# CSV_PATH = os.getenv("PLANT_SPECIES_CSV", "assets/plant_species.csv")
+# API_ENDPOINT = os.getenv("PLANT_SPECIES_ENDPOINT", DEFAULT_API_ENDPOINT)
+# REQUEST_TIMEOUT = float(os.getenv("PLANT_SPECIES_TIMEOUT", "15"))
+
+CSV_PATH = "assets/plant_species.csv"
+API_ENDPOINT = DEFAULT_API_ENDPOINT
+REQUEST_TIMEOUT = 15
 
 
 def load_csv(path: str = CSV_PATH) -> pd.DataFrame:
@@ -75,6 +76,7 @@ def build_payload(row: pd.Series) -> dict:
 def post_species(session: requests.Session, payload: dict) -> Tuple[bool, str]:
     """POST a single species; return success flag and message."""
     try:
+        print("API_ENDPOINT =", API_ENDPOINT, "type =", type(API_ENDPOINT))
         resp = session.post(API_ENDPOINT, json=payload, timeout=REQUEST_TIMEOUT)
         if resp.ok:
             return True, "created"
@@ -100,11 +102,11 @@ def main() -> None:
                 continue
             row = row.fillna("NaN")
             payload = build_payload(row)
-            # print(payload)
+            print(payload)
             ok, msg = post_species(session, payload)
             if ok:
                 sent += 1
-                # print(f"Sent {payload}")
+                print(f"Sent {payload}")
             else:
                 failures += 1
                 # Keep a short log to stderr for visibility.

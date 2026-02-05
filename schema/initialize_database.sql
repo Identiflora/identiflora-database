@@ -1,4 +1,4 @@
-CREATE DATABASE IF NOT EXISTS identiflora_db;
+CREATE DATABASE IF NOT EXISTS identiflora_testing_db;
 
 USE identiflora_db;
 
