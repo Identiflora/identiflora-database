@@ -214,7 +214,7 @@ CREATE PROCEDURE get_num_users ()
 
 CREATE PROCEDURE add_user_global_points(IN user_id_in int, IN add_points_in int)
   BEGIN
-    UPDATE users SET global_points = global_points + add_points_in 
+    UPDATE user SET global_points = global_points + add_points_in 
     WHERE user_id = user_id_in;
   END//
 
