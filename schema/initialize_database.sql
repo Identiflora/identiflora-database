@@ -7,10 +7,11 @@ CREATE TABLE user (
     AUTO_INCREMENT,
   username varchar(225) NOT NULL,
   email varchar(255) NOT NULL,
-  password_hash varchar(255) NOT NULL,
+  password_hash varchar(255),
   phone varchar(255),
   global_points int NOT NULL DEFAULT 0,
   time_joined timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  external_login BOOLEAN DEFAULT 0
 
   PRIMARY KEY (user_id),
   UNIQUE (email),
@@ -203,7 +204,7 @@ CREATE PROCEDURE get_user_leaderboard_info (IN user_id_in int)
 
 CREATE PROCEDURE login_user (IN user_email_in varchar(225))
   BEGIN
-    SELECT user_id, password_hash FROM user
+    SELECT user_id, password_hash, external_login FROM user
     WHERE email = user_email_in;
   END//
 
