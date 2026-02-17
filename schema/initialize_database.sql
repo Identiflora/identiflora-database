@@ -196,6 +196,17 @@ CREATE PROCEDURE add_user (IN user_email_in varchar(225), IN username_in varchar
     WHERE username = username_in AND email = user_email_in AND password_hash = user_password_in;
   END//
 
+CREATE PROCEDURE add_google_user (IN user_email_in varchar(225), IN username_in varchar(225))
+  BEGIN
+    INSERT INTO user
+      (username, email, password_hash, time_joined, external_login)
+      VALUES (username_in, user_email_in, '', NOW(), 1);
+
+    -- Get user ID for new user
+    SELECT user_id FROM user
+    WHERE username = username_in AND email = user_email_in AND external_login = 1;
+  END//
+
 CREATE PROCEDURE get_user_leaderboard_info (IN user_id_in int)
   BEGIN
     SELECT username, global_points FROM user
@@ -219,6 +230,11 @@ CREATE PROCEDURE add_user_global_points(IN user_id_in int, IN add_points_in int)
     WHERE user_id = user_id_in;
   END//
 
+CREATE PROCEDURE set_user_external_login(IN user_id_in int)
+  BEGIN
+    UPDATE user SET external_login = 1
+    WHERE user_id = user_id_in;
+  END//
 
 delimiter ;
 
