@@ -14,6 +14,7 @@ CREATE TABLE user (
   external_login BOOLEAN DEFAULT 0
 
   PRIMARY KEY (user_id),
+  UNIQUE (username)
   UNIQUE (email),
   UNIQUE (phone)
 );
