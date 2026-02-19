@@ -12,7 +12,7 @@ CREATE TABLE user (
   global_points int NOT NULL DEFAULT 0,
   time_joined timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   external_login BOOLEAN DEFAULT 0,
-  -- is_otp BOOLEAN DEFAULT 0 !!! ADD THIS !!!
+  is_otp BOOLEAN DEFAULT 0,
 
   PRIMARY KEY (user_id),
   UNIQUE (username)
@@ -253,10 +253,10 @@ CREATE PROCEDURE set_user_external_login(IN user_id_in int)
     WHERE user_id = user_id_in;
   END//
 
-CREATE PROCEDURE otp_requested(IN user_email_in varchar(225), IN otp_in varchar(225))
+CREATE PROCEDURE otp_requested (IN user_email_in varchar(225), IN otp_in varchar(225))
   BEGIN
-    DECLARE id int;
-    DECLARE external_flag, success BOOLEAN;
+    DECLARE success, id int;
+    DECLARE external_flag BOOLEAN;
 
     -- Default (no user exists)
     SET success = -1;
@@ -277,7 +277,7 @@ CREATE PROCEDURE otp_requested(IN user_email_in varchar(225), IN otp_in varchar(
           (user_id, created_at)
           VALUES (id, NOW());
 
-        UPDATE user SET password_hash = otp_in
+        UPDATE user SET password_hash = otp_in, is_otp = 1
         WHERE user_id = id;
 
         -- User exists and is valid (1)
@@ -295,6 +295,48 @@ CREATE PROCEDURE otp_requested(IN user_email_in varchar(225), IN otp_in varchar(
 
     -- Return process result
     SELECT success AS result;
+  END//
+
+CREATE PROCEDURE verify_otp (IN otp_in varchar(225), IN otp_exp_time_in int, IN user_email_in varchar(225))
+  BEGIN
+    DECLARE success int;
+    DECLARE id int;
+    DECLARE has_otp BOOLEAN;
+    DECLARE otp varchar(225);
+
+    -- Default (has no OTP or OTP doesn't match)
+    SET success = -1;
+
+    -- Get user id and otp bool
+    SELECT user_id, is_otp, password_hash INTO id, has_otp, otp FROM user WHERE email = user_email_in;
+
+    IF has_otp AND otp = otp_in THEN
+      DECLARE stored_time timestamp;
+
+      -- OTP exists and matches, but may be expired
+      SET success = 0;
+
+      -- Find OTP that was most recently created (the one stored for user password)
+      SELECT created_at INTO stored_time FROM user_otp_attempt 
+      WHERE user_id = id ORDER BY created_at DESC LIMIT 1;
+
+      -- Increment OTP attempt count for this OTP
+      UPDATE user_otp_attempt SET user_otp_attempt = user_otp_attempt + 1
+      WHERE user_id = id AND created_at = stored_time;
+
+      -- Check experation time
+      IF TIMESTAMPDIFF(MINUTE, stored_time, NOW()) < otp_exp_time_in THEN
+        -- OTP is not expired
+        SET success = 1;
+      END IF;
+    END IF;
+
+    SELECT success AS result;
+  END//
+
+CREATE PROCEDURE replace_otp (IN new_password_hash varchar(225), IN user_id_in int)
+  BEGIN
+    UPDATE user SET password_hash = new_password_hash, is_otp = 0 WHERE user_id = user_id_in;
   END//
 
 delimiter ;
