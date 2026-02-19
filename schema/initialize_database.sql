@@ -11,12 +11,28 @@ CREATE TABLE user (
   phone varchar(255),
   global_points int NOT NULL DEFAULT 0,
   time_joined timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  external_login BOOLEAN DEFAULT 0
+  external_login BOOLEAN DEFAULT 0,
+  -- is_otp BOOLEAN DEFAULT 0 !!! ADD THIS !!!
 
   PRIMARY KEY (user_id),
   UNIQUE (username)
   UNIQUE (email),
   UNIQUE (phone)
+);
+
+-- log of one time password (otp) requests and attempts at entering that otp
+CREATE TABLE user_otp_attempt (
+  user_id int,
+  created_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  otp_attempt_count tinyint NOT NULL DEFAULT 0,
+  external_user_attempt BOOLEAN DEFAULT 0,
+
+  INDEX idx_user_attempts (user_id, created_at),
+
+  CONSTRAINT otp_user 
+    FOREIGN KEY (user_id) 
+    REFERENCES user(user_id) 
+    ON DELETE CASCADE
 );
 
 -- created when photo is submitted from user
@@ -235,6 +251,50 @@ CREATE PROCEDURE set_user_external_login(IN user_id_in int)
   BEGIN
     UPDATE user SET external_login = 1
     WHERE user_id = user_id_in;
+  END//
+
+CREATE PROCEDURE otp_requested(IN user_email_in varchar(225), IN otp_in varchar(225))
+  BEGIN
+    DECLARE id int;
+    DECLARE external_flag, success BOOLEAN;
+
+    -- Default (no user exists)
+    SET success = -1;
+
+    -- Save user ID locally
+    SELECT user_id INTO id FROM user
+    WHERE email = user_email_in;
+
+    IF id IS NOT NULL THEN
+      -- Save external flag locally
+      SELECT external_login INTO external_flag FROM user
+      WHERE user_id = id;
+
+      -- Update user password hash to be hashed OTP if user is not external
+      IF external_flag < 1 THEN
+        -- Log non-external user OTP request
+        INSERT INTO user_otp_attempt
+          (user_id, created_at)
+          VALUES (id, NOW());
+
+        UPDATE user SET password_hash = otp_in
+        WHERE user_id = id;
+
+        -- User exists and is valid (1)
+        SET success = 1;
+      ELSE
+        -- Log external user OTP request
+        INSERT INTO user_otp_attempt
+          (user_id, created_at, external_user_attempt)
+          VALUES (id, NOW(), 1);
+        
+        -- User exists, but is invalid (0)
+        SET success = 0;
+      END IF;
+    END IF;
+
+    -- Return process result
+    SELECT success AS result;
   END//
 
 delimiter ;
