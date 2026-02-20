@@ -108,6 +108,23 @@ CREATE TABLE identification_result (
     ON DELETE CASCADE
 );
 
+--friends table--
+CREATE TABLE user_friend (
+  user_id INT NOT NULL,
+  friend_user_id INT NOT NULL,
+  time_added TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  PRIMARY KEY (user_id, friend_user_id),
+
+  FOREIGN KEY (user_id)
+    REFERENCES user(user_id)
+    ON DELETE CASCADE,
+
+  FOREIGN KEY (friend_user_id)
+    REFERENCES user(user_id)
+    ON DELETE CASCADE
+);
+
 CREATE TABLE incorrect_identification (
   identification_id int,
   correct_species_id int,
@@ -340,5 +357,26 @@ CREATE PROCEDURE replace_otp (IN new_password_hash varchar(225), IN user_email_i
     UPDATE user SET password_hash = new_password_hash, is_otp = 0 WHERE email = user_email_in;
   END//
 
+--friends procedure--
+    CREATE PROCEDURE check_friend_exists (IN user_id_in INT, IN friend_user_id_in INT)
+BEGIN
+  SELECT user_id FROM user_friend
+  WHERE user_id = user_id_in AND friend_user_id = friend_user_id_in;
+END//
+
+CREATE PROCEDURE add_friend (IN user_id_in INT, IN friend_user_id_in INT)
+BEGIN
+  INSERT INTO user_friend (user_id, friend_user_id, time_added)
+  VALUES (user_id_in, friend_user_id_in, NOW());
+END//
+
+CREATE PROCEDURE get_friends (IN user_id_in INT)
+BEGIN
+  SELECT friend_user_id
+  FROM user_friend
+  WHERE user_id = user_id_in
+  ORDER BY time_added DESC;
+END//
+  
 delimiter ;
 
