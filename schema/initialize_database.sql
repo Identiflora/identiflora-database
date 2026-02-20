@@ -14,6 +14,8 @@ CREATE TABLE user (
   external_login BOOLEAN DEFAULT 0,
   is_otp BOOLEAN DEFAULT 0,
 
+  INDEX idx_user_points (user_id, global_points),
+
   PRIMARY KEY (user_id),
   UNIQUE (username)
   UNIQUE (email),
@@ -224,10 +226,10 @@ CREATE PROCEDURE add_google_user (IN user_email_in varchar(225), IN username_in 
     WHERE username = username_in AND email = user_email_in AND external_login = 1;
   END//
 
-CREATE PROCEDURE get_user_leaderboard_info (IN user_id_in int)
+CREATE PROCEDURE get_global_leaderboard_info (IN leaderboard_size int)
   BEGIN
-    SELECT username, global_points FROM user
-    WHERE user_id = user_id_in;
+    SELECT user_id, username, global_points FROM user 
+    ORDER BY global_points DESC LIMIT leaderboard_size;
   END//
 
 CREATE PROCEDURE login_user (IN user_email_in varchar(225))
