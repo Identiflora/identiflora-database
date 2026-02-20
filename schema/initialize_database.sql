@@ -17,7 +17,7 @@ CREATE TABLE user (
   INDEX idx_user_points (user_id, global_points),
 
   PRIMARY KEY (user_id),
-  UNIQUE (username)
+  UNIQUE (username),
   UNIQUE (email),
   UNIQUE (phone)
 );
@@ -338,6 +338,12 @@ CREATE PROCEDURE verify_otp (IN otp_exp_time_in int, IN user_email_in varchar(22
 CREATE PROCEDURE replace_otp (IN new_password_hash varchar(225), IN user_email_in varchar(225))
   BEGIN
     UPDATE user SET password_hash = new_password_hash, is_otp = 0 WHERE email = user_email_in;
+  END//
+
+-- for geting a species id from scientific name. Needed for submitting an incorrect identification. 
+CREATE PROCEDURE get_species_id (IN scientific_name_in varchar(255))
+  BEGIN
+    SELECT species_id FROM plant_species WHERE scientific_name = scientific_name_in;
   END//
 
 delimiter ;
