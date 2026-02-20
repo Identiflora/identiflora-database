@@ -297,12 +297,13 @@ CREATE PROCEDURE otp_requested (IN user_email_in varchar(225), IN otp_in varchar
     SELECT success AS result;
   END//
 
-CREATE PROCEDURE verify_otp (IN otp_in varchar(225), IN otp_exp_time_in int, IN user_email_in varchar(225))
+CREATE PROCEDURE verify_otp (IN otp_exp_time_in int, IN user_email_in varchar(225))
   BEGIN
     DECLARE success int;
     DECLARE id int;
     DECLARE has_otp BOOLEAN;
     DECLARE otp varchar(225);
+    DECLARE stored_time timestamp;
 
     -- Default (has no OTP or OTP doesn't match)
     SET success = -1;
@@ -310,10 +311,8 @@ CREATE PROCEDURE verify_otp (IN otp_in varchar(225), IN otp_exp_time_in int, IN 
     -- Get user id and otp bool
     SELECT user_id, is_otp, password_hash INTO id, has_otp, otp FROM user WHERE email = user_email_in;
 
-    IF has_otp AND otp = otp_in THEN
-      DECLARE stored_time timestamp;
-
-      -- OTP exists and matches, but may be expired
+    IF has_otp THEN
+      -- OTP exists, but may be expired
       SET success = 0;
 
       -- Find OTP that was most recently created (the one stored for user password)
@@ -321,7 +320,7 @@ CREATE PROCEDURE verify_otp (IN otp_in varchar(225), IN otp_exp_time_in int, IN 
       WHERE user_id = id ORDER BY created_at DESC LIMIT 1;
 
       -- Increment OTP attempt count for this OTP
-      UPDATE user_otp_attempt SET user_otp_attempt = user_otp_attempt + 1
+      UPDATE user_otp_attempt SET otp_attempt_count = otp_attempt_count + 1
       WHERE user_id = id AND created_at = stored_time;
 
       -- Check experation time
@@ -331,12 +330,12 @@ CREATE PROCEDURE verify_otp (IN otp_in varchar(225), IN otp_exp_time_in int, IN 
       END IF;
     END IF;
 
-    SELECT success AS result;
+    SELECT success AS result, otp AS otp;
   END//
 
-CREATE PROCEDURE replace_otp (IN new_password_hash varchar(225), IN user_id_in int)
+CREATE PROCEDURE replace_otp (IN new_password_hash varchar(225), IN user_email_in varchar(225))
   BEGIN
-    UPDATE user SET password_hash = new_password_hash, is_otp = 0 WHERE user_id = user_id_in;
+    UPDATE user SET password_hash = new_password_hash, is_otp = 0 WHERE email = user_email_in;
   END//
 
 delimiter ;
