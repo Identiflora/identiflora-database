@@ -346,5 +346,9 @@ CREATE PROCEDURE get_species_id (IN scientific_name_in varchar(255))
     SELECT species_id FROM plant_species WHERE scientific_name = scientific_name_in;
   END//
 
+CREATE PROCEDURE get_user_points(IN username_in varchar(255))
+  BEGIN 
+    SELECT global_points FROM user WHERE username = username_in;
+  END//
 delimiter ;
 
