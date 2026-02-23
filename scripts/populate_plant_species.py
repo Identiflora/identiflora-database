@@ -14,12 +14,15 @@ import requests
 import numpy as np
 import json
 
+# replace default value of API_ENDPOINT with localhost for local testing if desired.
+# http://localhost:8000/plant-species
+# https://identiflora-api.onrender.com/plant-species
 
 # Configurable paths/endpoints via environment.
 CSV_PATH = os.getenv("PLANT_SPECIES_CSV", "assets/plant_species.csv")
 API_ENDPOINT = os.getenv(
     "PLANT_SPECIES_ENDPOINT",
-    "https://identiflora-api.onrender.com/plant-species",
+    "http://localhost:8000/plant-species",
 )
 REQUEST_TIMEOUT = float(os.getenv("PLANT_SPECIES_TIMEOUT", "120"))
 

@@ -17,7 +17,7 @@ CREATE TABLE user (
   INDEX idx_user_points (user_id, global_points),
 
   PRIMARY KEY (user_id),
-  UNIQUE (username)
+  UNIQUE (username),
   UNIQUE (email),
   UNIQUE (phone)
 );
@@ -378,5 +378,15 @@ BEGIN
   ORDER BY time_added DESC;
 END//
   
+-- for geting a species id from scientific name. Needed for submitting an incorrect identification. 
+CREATE PROCEDURE get_species_id (IN scientific_name_in varchar(255))
+  BEGIN
+    SELECT species_id FROM plant_species WHERE scientific_name = scientific_name_in;
+  END//
+
+CREATE PROCEDURE get_user_points(IN username_in varchar(255))
+  BEGIN 
+    SELECT global_points FROM user WHERE username = username_in;
+  END//
 delimiter ;
 
