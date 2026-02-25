@@ -232,7 +232,7 @@ CREATE PROCEDURE add_user (IN user_email_in varchar(225), IN username_in varchar
     WHERE username = username_in AND email = user_email_in AND password_hash = user_password_in;
   END//
 
-CREATE PROCEDURE add_google_user (IN user_email_in varchar(225), IN username_in varchar(225))
+CREATE PROCEDURE add_external_user (IN user_email_in varchar(225), IN username_in varchar(225))
   BEGIN
     INSERT INTO user
       (username, email, password_hash, time_joined, external_login)
@@ -357,7 +357,7 @@ CREATE PROCEDURE replace_otp (IN new_password_hash varchar(225), IN user_email_i
     UPDATE user SET password_hash = new_password_hash, is_otp = 0 WHERE email = user_email_in;
   END//
 
---friends procedure--
+-- friends procedure
     CREATE PROCEDURE check_friend_exists (IN user_id_in INT, IN friend_user_id_in INT)
 BEGIN
   SELECT user_id FROM user_friend
