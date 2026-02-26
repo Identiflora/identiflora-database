@@ -108,7 +108,7 @@ CREATE TABLE identification_result (
     ON DELETE CASCADE
 );
 
---friends table--
+-- friends table 
 CREATE TABLE user_friend (
   user_id INT NOT NULL,
   friend_user_id INT NOT NULL,
@@ -384,9 +384,9 @@ CREATE PROCEDURE get_species_id (IN scientific_name_in varchar(255))
     SELECT species_id FROM plant_species WHERE scientific_name = scientific_name_in;
   END//
 
-CREATE PROCEDURE get_user_points(IN username_in varchar(255))
+CREATE PROCEDURE get_user_points(IN user_id_in INT)
   BEGIN 
-    SELECT global_points FROM user WHERE username = username_in;
+    SELECT global_points FROM user WHERE user_id = user_id_in;
   END//
 delimiter ;
 
