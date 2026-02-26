@@ -2,7 +2,7 @@ CREATE DATABASE IF NOT EXISTS identiflora_db;
 
 USE identiflora_db;
 
-CREATE TABLE user (
+CREATE TABLE IF NOT EXISTS user (
   user_id int
     AUTO_INCREMENT,
   username varchar(225) NOT NULL,
@@ -23,7 +23,7 @@ CREATE TABLE user (
 );
 
 -- log of one time password (otp) requests and attempts at entering that otp
-CREATE TABLE user_otp_attempt (
+CREATE TABLE IF NOT EXISTS user_otp_attempt (
   user_id int,
   created_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   otp_attempt_count tinyint NOT NULL DEFAULT 0,
@@ -38,7 +38,7 @@ CREATE TABLE user_otp_attempt (
 );
 
 -- created when photo is submitted from user
-CREATE TABLE identification_submission (
+CREATE TABLE IF NOT EXISTS identification_submission (
   identification_id int 
     AUTO_INCREMENT,
   img_url varchar(512) NOT NULL,
@@ -52,7 +52,7 @@ CREATE TABLE identification_submission (
 );
 
 -- each plant species the model is capable of identifying
-CREATE TABLE plant_species (
+CREATE TABLE IF NOT EXISTS plant_species (
   species_id int
     AUTO_INCREMENT,
   common_name varchar(255),
@@ -65,7 +65,7 @@ CREATE TABLE plant_species (
 );
 
 -- specifies a unique option for the result of identification
-CREATE TABLE identification_option (
+CREATE TABLE IF NOT EXISTS identification_option (
   option_id int 
     AUTO_INCREMENT,
   identification_id int NOT NULL,
@@ -88,7 +88,7 @@ CREATE TABLE identification_option (
 );
 
 -- contains identification options
-CREATE TABLE identification_result (
+CREATE TABLE IF NOT EXISTS identification_result (
   identification_id int,
   option_id int NOT NULL,
   user_id int NOT NULL,
@@ -109,7 +109,7 @@ CREATE TABLE identification_result (
 );
 
 -- friends table 
-CREATE TABLE user_friend (
+CREATE TABLE IF NOT EXISTS user_friend (
   user_id INT NOT NULL,
   friend_user_id INT NOT NULL,
   time_added TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -125,7 +125,7 @@ CREATE TABLE user_friend (
     ON DELETE CASCADE
 );
 
-CREATE TABLE incorrect_identification (
+CREATE TABLE IF NOT EXISTS incorrect_identification (
   identification_id int,
   correct_species_id int,
   incorrect_species_id int,
@@ -154,38 +154,38 @@ CREATE TABLE incorrect_identification (
 -- Stored procedures and functions
 delimiter //
 
-CREATE PROCEDURE check_ident_id_exists (IN ident_id_in int)
+CREATE PROCEDURE IF NOT EXISTS check_ident_id_exists (IN ident_id_in int)
   BEGIN
     SELECT identification_id FROM identification_submission
     WHERE identification_id = ident_id_in;
   END//
 
-CREATE PROCEDURE check_species_id_exists (IN species_id_in int)
+CREATE PROCEDURE IF NOT EXISTS check_species_id_exists (IN species_id_in int)
   BEGIN
     SELECT species_id FROM plant_species
     WHERE species_id = species_id_in;
   END//
 
-CREATE PROCEDURE check_incorrect_sub_exists (IN ident_id_in int)
+CREATE PROCEDURE IF NOT EXISTS check_incorrect_sub_exists (IN ident_id_in int)
   BEGIN
     SELECT identification_id FROM incorrect_identification
     WHERE identification_id = ident_id_in;
   END//
 
-CREATE PROCEDURE check_plant_species_exists (IN scientific_name_in varchar(255))
+CREATE PROCEDURE IF NOT EXISTS check_plant_species_exists (IN scientific_name_in varchar(255))
   BEGIN 
     SELECT scientific_name FROM plant_species 
     WHERE scientific_name = scientific_name_in;
   END//
   
-CREATE PROCEDURE add_incorrect_id (IN ident_id_in int, IN correct_species_id_in int, IN inc_species_id_in int)
+CREATE PROCEDURE IF NOT EXISTS add_incorrect_id (IN ident_id_in int, IN correct_species_id_in int, IN inc_species_id_in int)
   BEGIN
     INSERT INTO incorrect_identification
       (identification_id, correct_species_id, incorrect_species_id, time_submitted)
       VALUES (ident_id_in, correct_species_id_in, inc_species_id_in, NOW());
   END//
 
-CREATE PROCEDURE add_plant_species (
+CREATE PROCEDURE IF NOT EXISTS add_plant_species (
   IN common_name_in varchar(255),
   IN scientific_name_in varchar(255),
   IN genus_in varchar(255),
@@ -197,31 +197,31 @@ CREATE PROCEDURE add_plant_species (
       VALUES (common_name_in, scientific_name_in, genus_in, img_url_in);
   END//
 
-CREATE PROCEDURE get_plant_species_img_url (IN sci_name varchar(255))
+CREATE PROCEDURE IF NOT EXISTS get_plant_species_img_url (IN sci_name varchar(255))
   BEGIN
     SELECT img_url FROM plant_species
     WHERE scientific_name = sci_name;
   END//
   
-CREATE PROCEDURE check_username_exists (IN username_in varchar(225))
+CREATE PROCEDURE IF NOT EXISTS check_username_exists (IN username_in varchar(225))
   BEGIN
     SELECT username FROM user
     WHERE username = username_in;
   END//
 
-CREATE PROCEDURE check_user_email_exists (IN user_email_in varchar(225))
+CREATE PROCEDURE IF NOT EXISTS check_user_email_exists (IN user_email_in varchar(225))
   BEGIN
     SELECT email FROM user
     WHERE email = user_email_in;
   END//
 
-CREATE PROCEDURE check_user_password_hash_exists (IN user_password_in varchar(225))
+CREATE PROCEDURE IF NOT EXISTS check_user_password_hash_exists (IN user_password_in varchar(225))
   BEGIN
     SELECT password_hash FROM user
     WHERE password_hash = user_password_in;
   END//
 
-CREATE PROCEDURE add_user (IN user_email_in varchar(225), IN username_in varchar(225), IN user_password_in varchar(225))
+CREATE PROCEDURE IF NOT EXISTS add_user (IN user_email_in varchar(225), IN username_in varchar(225), IN user_password_in varchar(225))
   BEGIN
     INSERT INTO user
       (username, email, password_hash, time_joined)
@@ -232,7 +232,7 @@ CREATE PROCEDURE add_user (IN user_email_in varchar(225), IN username_in varchar
     WHERE username = username_in AND email = user_email_in AND password_hash = user_password_in;
   END//
 
-CREATE PROCEDURE add_external_user (IN user_email_in varchar(225), IN username_in varchar(225))
+CREATE PROCEDURE IF NOT EXISTS add_external_user (IN user_email_in varchar(225), IN username_in varchar(225))
   BEGIN
     INSERT INTO user
       (username, email, password_hash, time_joined, external_login)
@@ -243,36 +243,36 @@ CREATE PROCEDURE add_external_user (IN user_email_in varchar(225), IN username_i
     WHERE username = username_in AND email = user_email_in AND external_login = 1;
   END//
 
-CREATE PROCEDURE get_global_leaderboard_info (IN leaderboard_size int)
+CREATE PROCEDURE IF NOT EXISTS get_global_leaderboard_info (IN leaderboard_size int)
   BEGIN
     SELECT user_id, username, global_points FROM user 
     ORDER BY global_points DESC LIMIT leaderboard_size;
   END//
 
-CREATE PROCEDURE login_user (IN user_email_in varchar(225))
+CREATE PROCEDURE IF NOT EXISTS login_user (IN user_email_in varchar(225))
   BEGIN
     SELECT user_id, password_hash, external_login FROM user
     WHERE email = user_email_in;
   END//
 
-CREATE PROCEDURE get_num_users ()
+CREATE PROCEDURE IF NOT EXISTS get_num_users ()
   BEGIN
     SELECT COUNT(*) FROM user;
   END//
 
-CREATE PROCEDURE add_user_global_points(IN user_id_in int, IN add_points_in int)
+CREATE PROCEDURE IF NOT EXISTS add_user_global_points(IN user_id_in int, IN add_points_in int)
   BEGIN
     UPDATE user SET global_points = global_points + add_points_in 
     WHERE user_id = user_id_in;
   END//
 
-CREATE PROCEDURE set_user_external_login(IN user_id_in int)
+CREATE PROCEDURE IF NOT EXISTS set_user_external_login(IN user_id_in int)
   BEGIN
     UPDATE user SET external_login = 1
     WHERE user_id = user_id_in;
   END//
 
-CREATE PROCEDURE otp_requested (IN user_email_in varchar(225), IN otp_in varchar(225))
+CREATE PROCEDURE IF NOT EXISTS otp_requested (IN user_email_in varchar(225), IN otp_in varchar(225))
   BEGIN
     DECLARE success, id int;
     DECLARE external_flag BOOLEAN;
@@ -316,7 +316,7 @@ CREATE PROCEDURE otp_requested (IN user_email_in varchar(225), IN otp_in varchar
     SELECT success AS result;
   END//
 
-CREATE PROCEDURE verify_otp (IN otp_exp_time_in int, IN user_email_in varchar(225))
+CREATE PROCEDURE IF NOT EXISTS verify_otp (IN otp_exp_time_in int, IN user_email_in varchar(225))
   BEGIN
     DECLARE success int;
     DECLARE id int;
@@ -352,25 +352,25 @@ CREATE PROCEDURE verify_otp (IN otp_exp_time_in int, IN user_email_in varchar(22
     SELECT success AS result, otp AS otp;
   END//
 
-CREATE PROCEDURE replace_otp (IN new_password_hash varchar(225), IN user_email_in varchar(225))
+CREATE PROCEDURE IF NOT EXISTS replace_otp (IN new_password_hash varchar(225), IN user_email_in varchar(225))
   BEGIN
     UPDATE user SET password_hash = new_password_hash, is_otp = 0 WHERE email = user_email_in;
   END//
 
 -- friends procedure
-    CREATE PROCEDURE check_friend_exists (IN user_id_in INT, IN friend_user_id_in INT)
+    CREATE PROCEDURE IF NOT EXISTS check_friend_exists (IN user_id_in INT, IN friend_user_id_in INT)
 BEGIN
   SELECT user_id FROM user_friend
   WHERE user_id = user_id_in AND friend_user_id = friend_user_id_in;
 END//
 
-CREATE PROCEDURE add_friend (IN user_id_in INT, IN friend_user_id_in INT)
+CREATE PROCEDURE IF NOT EXISTS add_friend (IN user_id_in INT, IN friend_user_id_in INT)
 BEGIN
   INSERT INTO user_friend (user_id, friend_user_id, time_added)
   VALUES (user_id_in, friend_user_id_in, NOW());
 END//
 
-CREATE PROCEDURE get_friends (IN user_id_in INT)
+CREATE PROCEDURE IF NOT EXISTS get_friends (IN user_id_in INT)
 BEGIN
   SELECT friend_user_id
   FROM user_friend
@@ -379,14 +379,23 @@ BEGIN
 END//
   
 -- for geting a species id from scientific name. Needed for submitting an incorrect identification. 
-CREATE PROCEDURE get_species_id (IN scientific_name_in varchar(255))
+CREATE PROCEDURE IF NOT EXISTS get_species_id (IN scientific_name_in varchar(255))
   BEGIN
     SELECT species_id FROM plant_species WHERE scientific_name = scientific_name_in;
   END//
 
-CREATE PROCEDURE get_user_points(IN user_id_in INT)
+-- gets a users global points from their user id
+CREATE PROCEDURE IF NOT EXISTS get_user_points(IN user_id_in INT)
   BEGIN 
     SELECT global_points FROM user WHERE user_id = user_id_in;
   END//
+
+-- gets a users username from their user id
+CREATE PROCEDURE IF NOT EXISTS get_username(IN user_id_in INT)
+  BEGIN 
+    SELECT username FROM user WHERE user_id = user_id_in;
+  END//
+
+-- gets a users level from their user id - not implemented yet
 delimiter ;
 
