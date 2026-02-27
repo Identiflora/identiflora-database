@@ -151,6 +151,25 @@ CREATE TABLE IF NOT EXISTS incorrect_identification (
     ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS friendships (
+  requester_id INT NOT NULL,
+  addressee_id INT NOT NULL,
+  status ENUM('pending','accepted','blocked') NOT NULL DEFAULT 'accepted',
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  PRIMARY KEY (requester_id, addressee_id),
+
+  CONSTRAINT chk_not_self CHECK (requester_id <> addressee_id),
+
+  FOREIGN KEY (requester_id)
+    REFERENCES user(user_id)
+    ON DELETE CASCADE,
+
+  FOREIGN KEY (addressee_id)
+    REFERENCES user(user_id)
+    ON DELETE CASCADE
+);
+
 -- Stored procedures and functions
 delimiter //
 
@@ -395,6 +414,52 @@ CREATE PROCEDURE IF NOT EXISTS get_username(IN user_id_in INT)
   BEGIN 
     SELECT username FROM user WHERE user_id = user_id_in;
   END//
+
+  CREATE PROCEDURE IF NOT EXISTS add_friend_by_username (
+  IN requester_id_in INT,
+  IN addressee_username_in VARCHAR(225)
+)
+BEGIN
+  DECLARE addressee_id INT;
+
+  SELECT user_id INTO addressee_id
+  FROM user
+  WHERE username = addressee_username_in
+  LIMIT 1;
+
+  IF addressee_id IS NULL THEN
+    SELECT 'user_not_found' AS error;
+  ELSEIF addressee_id = requester_id_in THEN
+    SELECT 'cannot_add_self' AS error;
+  ELSE
+    INSERT INTO friendships (requester_id, addressee_id, status)
+    VALUES (requester_id_in, addressee_id, 'pending')
+    ON DUPLICATE KEY UPDATE
+      status = VALUES(status),
+      created_at = CURRENT_TIMESTAMP;
+
+    SELECT 'ok' AS result, addressee_id AS addressee_user_id;
+  END IF;
+END//
+
+CREATE PROCEDURE IF NOT EXISTS get_friends (IN user_id_in INT)
+BEGIN
+  SELECT
+    u.user_id,
+    u.username,
+    u.email,
+    u.global_points,
+    u.time_joined
+  FROM friendships f
+  JOIN user u
+    ON u.user_id = CASE
+      WHEN f.requester_id = user_id_in THEN f.addressee_id
+      ELSE f.requester_id
+    END
+  WHERE (f.requester_id = user_id_in OR f.addressee_id = user_id_in)
+    AND f.status = 'accepted';
+END//
+
 
 -- gets a users level from their user id - not implemented yet
 delimiter ;
