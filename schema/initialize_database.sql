@@ -1,6 +1,6 @@
-CREATE DATABASE IF NOT EXISTS identiflora_testing_db;
+CREATE DATABASE IF NOT EXISTS identiflora_db;
 
-USE identiflora;
+USE identiflora_db;
 
 CREATE TABLE user (
   user_id int
@@ -15,6 +15,25 @@ CREATE TABLE user (
   PRIMARY KEY (user_id),
   UNIQUE (email),
   UNIQUE (phone)
+);
+
+CREATE TABLE friendships (
+  requester_id INT NOT NULL,
+  addressee_id INT NOT NULL,
+  status ENUM('pending','accepted','blocked') NOT NULL DEFAULT 'accepted',
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  PRIMARY KEY (requester_id, addressee_id),
+
+  CONSTRAINT chk_not_self CHECK (requester_id <> addressee_id),
+
+  FOREIGN KEY (requester_id)
+    REFERENCES user(user_id)
+    ON DELETE CASCADE,
+
+  FOREIGN KEY (addressee_id)
+    REFERENCES user(user_id)
+    ON DELETE CASCADE
 );
 
 -- created when photo is submitted from user
