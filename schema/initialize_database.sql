@@ -2,7 +2,7 @@ CREATE DATABASE IF NOT EXISTS identiflora_testing_db;
 
 USE identiflora;
 
-CREATE TABLE `user` (
+CREATE TABLE user (
   user_id int
     AUTO_INCREMENT,
   username varchar(225) NOT NULL,
