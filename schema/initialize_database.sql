@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS user (
   time_joined timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   external_login BOOLEAN DEFAULT 0,
   is_otp BOOLEAN DEFAULT 0,
+  selected_badge varchar(255),
 
   INDEX idx_user_points (user_id, global_points),
 
@@ -415,7 +416,7 @@ CREATE PROCEDURE IF NOT EXISTS get_username(IN user_id_in INT)
     SELECT username FROM user WHERE user_id = user_id_in;
   END//
 
-  CREATE PROCEDURE IF NOT EXISTS add_friend_by_username (
+CREATE PROCEDURE IF NOT EXISTS add_friend_by_username (
   IN requester_id_in INT,
   IN addressee_username_in VARCHAR(225)
 )
@@ -460,6 +461,17 @@ BEGIN
     AND f.status = 'accepted';
 END//
 
+CREATE PROCEDURE IF NOT EXISTS set_user_badge(IN user_id_in int, IN badge_file_path varchar(225))
+  BEGIN
+    UPDATE user SET selected_badge = badge_file_path
+    WHERE user_id = user_id_in;
+  END//
+
+CREATE PROCEDURE IF NOT EXISTS get_user_badge(IN user_id_in int)
+  BEGIN
+    SELECT selected_badge FROM user 
+    WHERE user_id = user_id_in;
+  END//
 
 -- gets a users level from their user id - not implemented yet
 delimiter ;
