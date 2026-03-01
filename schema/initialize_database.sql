@@ -265,7 +265,7 @@ CREATE PROCEDURE IF NOT EXISTS add_external_user (IN user_email_in varchar(225),
 
 CREATE PROCEDURE IF NOT EXISTS get_global_leaderboard_info (IN leaderboard_size int)
   BEGIN
-    SELECT user_id, username, global_points FROM user 
+    SELECT user_id, username, global_points, selected_badge FROM user 
     ORDER BY global_points DESC LIMIT leaderboard_size;
   END//
 
