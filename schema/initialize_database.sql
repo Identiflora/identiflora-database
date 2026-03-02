@@ -271,6 +271,13 @@ CREATE PROCEDURE IF NOT EXISTS get_global_leaderboard_info (IN leaderboard_size 
     ORDER BY global_points DESC LIMIT leaderboard_size;
   END//
 
+CREATE PROCEDURE IF NOT EXISTS get_regional_leaderboard_info (IN user_id_in int, IN leaderboard_size int)
+  BEGIN
+    SELECT user_id, username, global_points, selected_badge FROM user 
+    WHERE region IN (SELECT region FROM user WHERE user_id = user_id_in) 
+    ORDER BY global_points DESC LIMIT leaderboard_size;
+  END//
+
 CREATE PROCEDURE IF NOT EXISTS login_user (IN user_email_in varchar(225))
   BEGIN
     SELECT user_id, password_hash, external_login FROM user
