@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS user (
   email varchar(255) NOT NULL,
   password_hash varchar(255),
   phone varchar(255),
+  region varchar(255),
   global_points int NOT NULL DEFAULT 0,
   time_joined timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   external_login BOOLEAN DEFAULT 0,
@@ -241,11 +242,12 @@ CREATE PROCEDURE IF NOT EXISTS check_user_password_hash_exists (IN user_password
     WHERE password_hash = user_password_in;
   END//
 
-CREATE PROCEDURE IF NOT EXISTS add_user (IN user_email_in varchar(225), IN username_in varchar(225), IN user_password_in varchar(225))
+DROP PROCEDURE IF EXISTS add_user//
+CREATE PROCEDURE IF NOT EXISTS add_user (IN user_email_in varchar(225), IN username_in varchar(225), IN region_in varchar(255), IN user_password_in varchar(225))
   BEGIN
     INSERT INTO user
-      (username, email, password_hash, time_joined)
-      VALUES (username_in, user_email_in, user_password_in, NOW());
+      (username, email, password_hash, time_joined, region)
+      VALUES (username_in, user_email_in, user_password_in, NOW(), region_in);
 
     -- Get user ID for new user
     SELECT user_id FROM user
@@ -470,6 +472,12 @@ CREATE PROCEDURE IF NOT EXISTS set_user_badge(IN user_id_in int, IN badge_file_p
 CREATE PROCEDURE IF NOT EXISTS get_user_badge(IN user_id_in int)
   BEGIN
     SELECT selected_badge FROM user 
+    WHERE user_id = user_id_in;
+  END//
+
+CREATE PROCEDURE IF NOT EXISTS get_user_region(IN user_id_in int)
+  BEGIN
+    SELECT region FROM user 
     WHERE user_id = user_id_in;
   END//
 
