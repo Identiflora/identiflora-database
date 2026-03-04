@@ -278,6 +278,24 @@ CREATE PROCEDURE IF NOT EXISTS get_regional_leaderboard_info (IN user_id_in int,
     ORDER BY global_points DESC LIMIT leaderboard_size;
   END//
 
+CREATE PROCEDURE IF NOT EXISTS get_friends_leaderboard_info (IN user_id_in int, IN leaderboard_size int)
+  BEGIN
+    SELECT
+      u.user_id,
+      u.username,
+      u.global_points,
+      u.selected_badge
+    FROM friendships f
+    JOIN user u
+      ON u.user_id = CASE
+        WHEN f.requester_id = user_id_in THEN f.addressee_id
+        ELSE f.requester_id
+      END
+    WHERE (f.requester_id = user_id_in OR f.addressee_id = user_id_in)
+      AND f.status = 'accepted'
+    ORDER BY u.global_points DESC LIMIT leaderboard_size;
+  END//
+
 CREATE PROCEDURE IF NOT EXISTS login_user (IN user_email_in varchar(225))
   BEGIN
     SELECT user_id, password_hash, external_login FROM user
@@ -399,13 +417,13 @@ BEGIN
   VALUES (user_id_in, friend_user_id_in, NOW());
 END//
 
-CREATE PROCEDURE IF NOT EXISTS get_friends (IN user_id_in INT)
-BEGIN
-  SELECT friend_user_id
-  FROM user_friend
-  WHERE user_id = user_id_in
-  ORDER BY time_added DESC;
-END//
+-- CREATE PROCEDURE IF NOT EXISTS get_friends (IN user_id_in INT)
+-- BEGIN
+--   SELECT friend_user_id
+--   FROM user_friend
+--   WHERE user_id = user_id_in
+--   ORDER BY time_added DESC;
+-- END//
   
 -- for geting a species id from scientific name. Needed for submitting an incorrect identification. 
 CREATE PROCEDURE IF NOT EXISTS get_species_id (IN scientific_name_in varchar(255))
