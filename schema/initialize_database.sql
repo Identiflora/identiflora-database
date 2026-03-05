@@ -256,11 +256,11 @@ CREATE PROCEDURE IF NOT EXISTS add_user (IN user_email_in varchar(225), IN usern
     WHERE username = username_in AND email = user_email_in AND password_hash = user_password_in;
   END//
 
-CREATE PROCEDURE IF NOT EXISTS add_external_user (IN user_email_in varchar(225), IN username_in varchar(225))
+CREATE PROCEDURE IF NOT EXISTS add_external_user (IN user_email_in varchar(225), IN username_in varchar(225), IN region_in varchar(255))
   BEGIN
     INSERT INTO user
-      (username, email, password_hash, time_joined, external_login)
-      VALUES (username_in, user_email_in, '', NOW(), 1);
+      (username, email, password_hash, time_joined, external_login, region)
+      VALUES (username_in, user_email_in, '', NOW(), 1, region_in);
 
     -- Get user ID for new user
     SELECT user_id FROM user
