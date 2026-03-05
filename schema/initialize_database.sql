@@ -46,6 +46,8 @@ CREATE TABLE IF NOT EXISTS identification_submission (
   img_url varchar(512) NOT NULL,
   user_id int, 
   time_submitted timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  latitude float,
+  longitude float,
 
   PRIMARY KEY (identification_id),
   FOREIGN KEY (user_id)
