@@ -508,6 +508,20 @@ CREATE PROCEDURE IF NOT EXISTS get_user_region(IN user_id_in int)
     WHERE user_id = user_id_in;
   END//
 
+CREATE PROCEDURE IF NOT EXISTS update_user_email (IN user_id_in INT, IN new_email_in VARCHAR(255))
+BEGIN
+    UPDATE user SET email = new_email_in WHERE user_id = user_id_in;
+END//
+
+CREATE PROCEDURE IF NOT EXISTS update_user_password (IN user_id_in INT, IN new_password_in VARCHAR(255))
+BEGIN
+    UPDATE user SET password_hash = new_password_in, is_otp = 0 WHERE user_id = user_id_in;
+END//
+
+CREATE PROCEDURE IF NOT EXISTS delete_user (IN user_id_in INT)
+BEGIN
+    DELETE FROM user WHERE user_id = user_id_in;
+END//
 -- gets a users level from their user id - not implemented yet
 delimiter ;
 
