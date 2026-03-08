@@ -522,6 +522,68 @@ CREATE PROCEDURE IF NOT EXISTS delete_user (IN user_id_in INT)
 BEGIN
     DELETE FROM user WHERE user_id = user_id_in;
 END//
+
+-- Creates the initial submission and returns its ID
+CREATE PROCEDURE IF NOT EXISTS add_identification_submission (
+  IN user_id_in INT,
+  IN lat_in FLOAT,
+  IN lon_in FLOAT,
+  IN img_url_in VARCHAR(512)
+)
+BEGIN
+  INSERT INTO identification_submission (user_id, latitude, longitude, img_url)
+  VALUES (user_id_in, lat_in, lon_in, img_url_in);
+  SELECT LAST_INSERT_ID() AS identification_id;
+END//
+
+-- Adds an identification option and returns the generated option ID
+CREATE PROCEDURE IF NOT EXISTS add_identification_option (
+  IN ident_id_in INT,
+  IN species_id_in INT,
+  IN rank_in TINYINT
+)
+BEGIN
+  INSERT INTO identification_option (identification_id, species_id, option_rank)
+  VALUES (ident_id_in, species_id_in, rank_in);
+  SELECT LAST_INSERT_ID() AS option_id;
+END//
+
+-- Records the final result chosen for a submission
+CREATE PROCEDURE IF NOT EXISTS add_identification_result (
+  IN ident_id_in INT,
+  IN user_id_in INT,
+  IN option_id_in INT
+)
+BEGIN
+  INSERT INTO identification_result (identification_id, user_id, option_id)
+  VALUES (ident_id_in, user_id_in, option_id_in);
+END//
+
+-- Generalized lookup for species ID by name (supporting common or scientific)
+CREATE PROCEDURE IF NOT EXISTS get_species_id_by_name (IN name_in VARCHAR(255))
+BEGIN
+  SELECT species_id FROM plant_species 
+  WHERE scientific_name = name_in OR common_name = name_in 
+  LIMIT 1;
+END//
+
+CREATE PROCEDURE IF NOT EXISTS get_user_submission_history (IN user_id_in INT)
+BEGIN
+    SELECT 
+        s.identification_id,
+        s.time_submitted,
+        s.latitude,
+        s.longitude,
+        s.img_url AS submission_img,
+        p.common_name,
+        p.scientific_name,
+        p.img_url AS species_img
+    FROM identification_submission s
+    JOIN identification_option o ON s.identification_id = o.identification_id AND o.option_rank = 1
+    JOIN plant_species p ON o.species_id = p.species_id
+    WHERE s.user_id = user_id_in
+    ORDER BY s.time_submitted DESC;
+END//
 -- gets a users level from their user id - not implemented yet
 delimiter ;
 
