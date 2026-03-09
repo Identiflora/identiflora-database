@@ -220,6 +220,12 @@ CREATE PROCEDURE IF NOT EXISTS add_plant_species (
       VALUES (common_name_in, scientific_name_in, genus_in, img_url_in);
   END//
 
+CREATE PROCEDURE IF NOT EXISTS add_plant_species_img_url (IN sci_name varchar(255), IN img_url_in varchar(512))
+  BEGIN
+    UPDATE plant_species SET img_url = img_url_in 
+    WHERE scientific_name = sci_name;
+  END//
+
 CREATE PROCEDURE IF NOT EXISTS get_plant_species_img_url (IN sci_name varchar(255))
   BEGIN
     SELECT img_url FROM plant_species
