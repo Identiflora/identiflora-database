@@ -245,10 +245,11 @@ BEGIN
   ELSEIF addressee_id = requester_id_in THEN
     SELECT 'cannot_add_self' AS error;
   ELSE
-    INSERT INTO friendships (requester_id, addressee_id, status)
-    VALUES (requester_id_in, addressee_id, 'pending')
+    INSERT INTO friendships (requester_id, addressee_id, requester_status, addressee_status)
+    VALUES (requester_id_in, addressee_id, 'pending', 'pending')
     ON DUPLICATE KEY UPDATE
-      status = VALUES(status),
+      requester_status = VALUES(requester_status),
+      addressee_status = VALUES(addressee_status),
       created_at = CURRENT_TIMESTAMP;
 
     SELECT 'ok' AS result, addressee_id AS addressee_user_id;
@@ -270,7 +271,45 @@ BEGIN
       ELSE f.requester_id
     END
   WHERE (f.requester_id = user_id_in OR f.addressee_id = user_id_in)
-    AND f.status = 'accepted';
+    AND f.requester_status = 'accepted'
+    AND f.addressee_status = 'accepted';
+END//
+
+CREATE PROCEDURE accept_friend_request (
+  IN requester_id_in INT,
+  IN addressee_id_in INT
+)
+BEGIN
+  -- Check if a friendship request exists and is still pending
+  IF EXISTS (SELECT 1 FROM friendships 
+             WHERE (requester_id = requester_id_in AND addressee_id = addressee_id_in OR 
+                    requester_id = addressee_id_in AND addressee_id = requester_id_in)
+             AND (requester_status = 'pending' OR addressee_status = 'pending')) THEN
+    -- Update the status to 'accepted' for the user accepting the request
+    UPDATE friendships
+    SET 
+      requester_status = IF(requester_id_in = requester_id, 'accepted', requester_status),
+      addressee_status = IF(addressee_id_in = addressee_id, 'accepted', addressee_status)
+    WHERE (requester_id = requester_id_in AND addressee_id = addressee_id_in OR
+           requester_id = addressee_id_in AND addressee_id = requester_id_in)
+      AND (requester_status = 'pending' OR addressee_status = 'pending');
+
+    -- Check if both users have accepted the request
+    IF EXISTS (SELECT 1 FROM friendships 
+               WHERE requester_id = requester_id_in 
+                 AND addressee_id = addressee_id_in 
+                 AND requester_status = 'accepted' 
+                 AND addressee_status = 'accepted') THEN
+      -- Users are now friends
+      SELECT 'Friendship accepted' AS result;
+    ELSE
+      -- Request still pending on one side
+      SELECT 'Friend request still pending on one side' AS result;
+    END IF;
+  ELSE
+    -- No pending request found
+    SELECT 'No pending request found' AS error;
+  END IF;
 END//
 
 delimiter ;
