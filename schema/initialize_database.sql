@@ -20,17 +20,14 @@ CREATE TABLE user (
 CREATE TABLE friendships (
   requester_id INT NOT NULL,
   addressee_id INT NOT NULL,
-  status ENUM('pending','accepted','blocked') NOT NULL DEFAULT 'accepted',
+  requester_status ENUM('pending', 'accepted', 'rejected') NOT NULL DEFAULT 'pending',
+  addressee_status ENUM('pending', 'accepted', 'rejected') NOT NULL DEFAULT 'pending',
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
   PRIMARY KEY (requester_id, addressee_id),
-
   CONSTRAINT chk_not_self CHECK (requester_id <> addressee_id),
-
   FOREIGN KEY (requester_id)
     REFERENCES user(user_id)
     ON DELETE CASCADE,
-
   FOREIGN KEY (addressee_id)
     REFERENCES user(user_id)
     ON DELETE CASCADE
