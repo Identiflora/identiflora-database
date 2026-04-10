@@ -78,8 +78,8 @@ CREATE TABLE identification_option (
    REFERENCES plant_species(species_id)
    ON DELETE CASCADE,
 
-  UNIQUE (identification_id, option_rank),-- make sure each option for a certain submission has a unique rank
-  UNIQUE (identification_id, species_id),-- make sure each option for a certain submission has a unique species
+  UNIQUE (identification_id, option_rank),
+  UNIQUE (identification_id, species_id),
   INDEX (identification_id, option_id)
 );
 
@@ -89,14 +89,14 @@ CREATE TABLE identification_result (
   option_id int NOT NULL,
   user_id int NOT NULL,
 
-  PRIMARY KEY (identification_id),-- guarantees at most 1 result per submission
+  PRIMARY KEY (identification_id),
 
   FOREIGN KEY (identification_id) 
     REFERENCES identification_submission(identification_id)  
     ON DELETE CASCADE,
 
   FOREIGN KEY (identification_id, option_id)
-   REFERENCES identification_option(identification_id, option_id)-- make sure result shows an option that is associated with the correct submission
+   REFERENCES identification_option(identification_id, option_id)
    ON DELETE CASCADE,
 
   FOREIGN KEY (user_id) 
@@ -112,9 +112,8 @@ CREATE TABLE incorrect_identification (
 
   PRIMARY KEY (identification_id),
 
-  -- make sure the incorrect species_id comes from the right source
   FOREIGN KEY (identification_id, incorrect_species_id)
-    REFERENCES identification_option(identification_id, species_id)-- may eventually want to change this so it pull id_id from result
+    REFERENCES identification_option(identification_id, species_id)
     ON DELETE CASCADE,
 
   FOREIGN KEY (identification_id)
@@ -130,7 +129,6 @@ CREATE TABLE incorrect_identification (
     ON DELETE CASCADE
 );
 
--- Stored procedures and functions
 delimiter //
 
 CREATE PROCEDURE check_ident_id_exists (IN ident_id_in int)
@@ -206,7 +204,6 @@ CREATE PROCEDURE add_user (IN user_email_in varchar(225), IN username_in varchar
       (username, email, password_hash, time_joined)
       VALUES (username_in, user_email_in, user_password_in, NOW());
 
-    -- Get user ID for new user
     SELECT user_id FROM user
     WHERE username = username_in AND email = user_email_in AND password_hash = user_password_in;
   END//
@@ -228,6 +225,17 @@ CREATE PROCEDURE get_num_users ()
     SELECT COUNT(*) FROM user;
   END//
 
+/* =========================
+   FRIENDSHIP PROCEDURES
+   ========================= */
+
+DROP PROCEDURE IF EXISTS add_friend_by_username//
+DROP PROCEDURE IF EXISTS get_friends//
+DROP PROCEDURE IF EXISTS get_pending_friend_requests//
+DROP PROCEDURE IF EXISTS accept_friend_request//
+DROP PROCEDURE IF EXISTS reject_friend_request//
+DROP PROCEDURE IF EXISTS remove_friend//
+
 CREATE PROCEDURE add_friend_by_username (
   IN requester_id_in INT,
   IN addressee_username_in VARCHAR(225)
@@ -241,16 +249,40 @@ BEGIN
   LIMIT 1;
 
   IF addressee_id IS NULL THEN
-    SELECT 'user_not_found' AS error;
+    SIGNAL SQLSTATE '45000'
+      SET MESSAGE_TEXT = 'User not found';
   ELSEIF addressee_id = requester_id_in THEN
-    SELECT 'cannot_add_self' AS error;
+    SIGNAL SQLSTATE '45000'
+      SET MESSAGE_TEXT = 'Cannot add yourself';
+  ELSEIF EXISTS (
+    SELECT 1
+    FROM friendships
+    WHERE requester_id = requester_id_in
+      AND addressee_id = addressee_id
+  ) THEN
+    SIGNAL SQLSTATE '45000'
+      SET MESSAGE_TEXT = 'Friend request already exists';
+  ELSEIF EXISTS (
+    SELECT 1
+    FROM friendships
+    WHERE requester_id = addressee_id
+      AND addressee_id = requester_id_in
+  ) THEN
+    SIGNAL SQLSTATE '45000'
+      SET MESSAGE_TEXT = 'Friend request already exists in reverse direction';
   ELSE
-    INSERT INTO friendships (requester_id, addressee_id, requester_status, addressee_status)
-    VALUES (requester_id_in, addressee_id, 'pending', 'pending')
-    ON DUPLICATE KEY UPDATE
-      requester_status = VALUES(requester_status),
-      addressee_status = VALUES(addressee_status),
-      created_at = CURRENT_TIMESTAMP;
+    INSERT INTO friendships (
+      requester_id,
+      addressee_id,
+      requester_status,
+      addressee_status
+    )
+    VALUES (
+      requester_id_in,
+      addressee_id,
+      'pending',
+      'pending'
+    );
 
     SELECT 'ok' AS result, addressee_id AS addressee_user_id;
   END IF;
@@ -275,42 +307,100 @@ BEGIN
     AND f.addressee_status = 'accepted';
 END//
 
+CREATE PROCEDURE get_pending_friend_requests (IN user_id_in INT)
+BEGIN
+  SELECT
+    u.user_id,
+    u.username,
+    u.email,
+    u.global_points,
+    u.time_joined
+  FROM friendships f
+  JOIN user u
+    ON u.user_id = f.requester_id
+  WHERE f.addressee_id = user_id_in
+    AND f.requester_status = 'pending'
+    AND f.addressee_status = 'pending';
+END//
+
 CREATE PROCEDURE accept_friend_request (
   IN requester_id_in INT,
   IN addressee_id_in INT
 )
 BEGIN
-  -- Check if a friendship request exists and is still pending
-  IF EXISTS (SELECT 1 FROM friendships 
-             WHERE (requester_id = requester_id_in AND addressee_id = addressee_id_in OR 
-                    requester_id = addressee_id_in AND addressee_id = requester_id_in)
-             AND (requester_status = 'pending' OR addressee_status = 'pending')) THEN
-    -- Update the status to 'accepted' for the user accepting the request
-    UPDATE friendships
-    SET 
-      requester_status = IF(requester_id_in = requester_id, 'accepted', requester_status),
-      addressee_status = IF(addressee_id_in = addressee_id, 'accepted', addressee_status)
-    WHERE (requester_id = requester_id_in AND addressee_id = addressee_id_in OR
-           requester_id = addressee_id_in AND addressee_id = requester_id_in)
-      AND (requester_status = 'pending' OR addressee_status = 'pending');
-
-    -- Check if both users have accepted the request
-    IF EXISTS (SELECT 1 FROM friendships 
-               WHERE requester_id = requester_id_in 
-                 AND addressee_id = addressee_id_in 
-                 AND requester_status = 'accepted' 
-                 AND addressee_status = 'accepted') THEN
-      -- Users are now friends
-      SELECT 'Friendship accepted' AS result;
-    ELSE
-      -- Request still pending on one side
-      SELECT 'Friend request still pending on one side' AS result;
-    END IF;
+  IF NOT EXISTS (
+    SELECT 1
+    FROM friendships
+    WHERE requester_id = requester_id_in
+      AND addressee_id = addressee_id_in
+      AND requester_status = 'pending'
+      AND addressee_status = 'pending'
+  ) THEN
+    SIGNAL SQLSTATE '45000'
+      SET MESSAGE_TEXT = 'No pending request found';
   ELSE
-    -- No pending request found
-    SELECT 'No pending request found' AS error;
+    UPDATE friendships
+    SET requester_status = 'accepted',
+        addressee_status = 'accepted'
+    WHERE requester_id = requester_id_in
+      AND addressee_id = addressee_id_in;
+
+    SELECT 'Friendship accepted' AS result;
+  END IF;
+END//
+
+CREATE PROCEDURE reject_friend_request (
+  IN requester_id_in INT,
+  IN addressee_id_in INT
+)
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM friendships
+    WHERE requester_id = requester_id_in
+      AND addressee_id = addressee_id_in
+      AND requester_status = 'pending'
+      AND addressee_status = 'pending'
+  ) THEN
+    SIGNAL SQLSTATE '45000'
+      SET MESSAGE_TEXT = 'No pending request found';
+  ELSE
+    DELETE FROM friendships
+    WHERE requester_id = requester_id_in
+      AND addressee_id = addressee_id_in
+      AND requester_status = 'pending'
+      AND addressee_status = 'pending';
+
+    SELECT 'Friend request rejected' AS result;
+  END IF;
+END//
+
+CREATE PROCEDURE remove_friend (
+  IN user_id_in INT,
+  IN friend_id_in INT
+)
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM friendships
+    WHERE (
+      requester_id = user_id_in AND addressee_id = friend_id_in
+    ) OR (
+      requester_id = friend_id_in AND addressee_id = user_id_in
+    )
+  ) THEN
+    SIGNAL SQLSTATE '45000'
+      SET MESSAGE_TEXT = 'Friendship not found';
+  ELSE
+    DELETE FROM friendships
+    WHERE (
+      requester_id = user_id_in AND addressee_id = friend_id_in
+    ) OR (
+      requester_id = friend_id_in AND addressee_id = user_id_in
+    );
+
+    SELECT 'Friend removed' AS result;
   END IF;
 END//
 
 delimiter ;
-
