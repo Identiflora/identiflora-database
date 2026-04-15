@@ -28,8 +28,9 @@ ALTER TABLE identification_option     AUTO_INCREMENT = 1;
 -- 2) User joins the app
 -- ============================================================
 
-INSERT INTO user (email, password_hash, phone)
-VALUES ('alice@example.com',
+INSERT INTO user (username, email, password_hash, phone)
+VALUES ('alice1',
+        'alice@example.com',
         'fake_hash_for_demo_only',
         '+1-555-000-1234');
 
