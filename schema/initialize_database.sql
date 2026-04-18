@@ -904,4 +904,14 @@ BEGIN
   ORDER BY s.time_submitted DESC;
 END//
 
+CREATE PROCEDURE set_username (
+  IN user_id_in INT,
+  IN username_in VARCHAR(225)
+)
+BEGIN
+  UPDATE user
+  SET username = username_in
+  WHERE user_id = user_id_in;
+END//
+
 DELIMITER ;
