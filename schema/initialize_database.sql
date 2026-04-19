@@ -589,98 +589,6 @@ BEGIN
     WHERE s.user_id = user_id_in
     ORDER BY s.time_submitted DESC;
 END//
--- gets a users level from their user id - not implemented yet
-delimiter ;
-
-    IF external_flag < 1 THEN
-      INSERT INTO user_otp_attempt (user_id, created_at)
-      VALUES (id, NOW());
-
-      UPDATE user
-      SET password_hash = otp_in, is_otp = 1
-      WHERE user_id = id;
-
-      SET success = 1;
-    ELSE
-      INSERT INTO user_otp_attempt (user_id, created_at, external_user_attempt)
-      VALUES (id, NOW(), 1);
-
-      SET success = 0;
-    END IF;
-  END IF;
-
-  SELECT success AS result;
-END//
-
-CREATE PROCEDURE verify_otp (
-  IN otp_exp_time_in INT,
-  IN user_email_in VARCHAR(225)
-)
-BEGIN
-  DECLARE success INT;
-  DECLARE id INT;
-  DECLARE has_otp BOOLEAN;
-  DECLARE otp VARCHAR(225);
-  DECLARE stored_time TIMESTAMP;
-
-  SET success = -1;
-
-  SELECT user_id, is_otp, password_hash
-  INTO id, has_otp, otp
-  FROM user
-  WHERE email = user_email_in;
-
-  IF has_otp THEN
-    SET success = 0;
-
-    SELECT created_at INTO stored_time
-    FROM user_otp_attempt
-    WHERE user_id = id
-    ORDER BY created_at DESC
-    LIMIT 1;
-
-    UPDATE user_otp_attempt
-    SET otp_attempt_count = otp_attempt_count + 1
-    WHERE user_id = id AND created_at = stored_time;
-
-    IF TIMESTAMPDIFF(MINUTE, stored_time, NOW()) < otp_exp_time_in THEN
-      SET success = 1;
-    END IF;
-  END IF;
-
-  SELECT success AS result, otp AS otp;
-END//
-
-CREATE PROCEDURE replace_otp (
-  IN new_password_hash VARCHAR(225),
-  IN user_email_in VARCHAR(225)
-)
-BEGIN
-  UPDATE user
-  SET password_hash = new_password_hash, is_otp = 0
-  WHERE email = user_email_in;
-END//
-
-CREATE PROCEDURE get_species_id (IN scientific_name_in VARCHAR(255))
-BEGIN
-  SELECT species_id
-  FROM plant_species
-  WHERE scientific_name = scientific_name_in;
-END//
-
-CREATE PROCEDURE get_user_points (IN user_id_in INT)
-BEGIN
-  SELECT global_points
-  FROM user
-  WHERE user_id = user_id_in;
-END//
-
-CREATE PROCEDURE get_username (IN user_id_in INT)
-BEGIN
-  SELECT username
-  FROM user
-  WHERE user_id = user_id_in;
-END//
 
 CREATE PROCEDURE add_friend_by_username (
   IN requester_id_in INT,
@@ -789,6 +697,99 @@ BEGIN
     AND f.status = 'accepted'
   ORDER BY u.username ASC;
 END//
+-- gets a users level from their user id - not implemented yet
+delimiter ;
+
+    IF external_flag < 1 THEN
+      INSERT INTO user_otp_attempt (user_id, created_at)
+      VALUES (id, NOW());
+
+      UPDATE user
+      SET password_hash = otp_in, is_otp = 1
+      WHERE user_id = id;
+
+      SET success = 1;
+    ELSE
+      INSERT INTO user_otp_attempt (user_id, created_at, external_user_attempt)
+      VALUES (id, NOW(), 1);
+
+      SET success = 0;
+    END IF;
+  END IF;
+
+  SELECT success AS result;
+END//
+
+CREATE PROCEDURE verify_otp (
+  IN otp_exp_time_in INT,
+  IN user_email_in VARCHAR(225)
+)
+BEGIN
+  DECLARE success INT;
+  DECLARE id INT;
+  DECLARE has_otp BOOLEAN;
+  DECLARE otp VARCHAR(225);
+  DECLARE stored_time TIMESTAMP;
+
+  SET success = -1;
+
+  SELECT user_id, is_otp, password_hash
+  INTO id, has_otp, otp
+  FROM user
+  WHERE email = user_email_in;
+
+  IF has_otp THEN
+    SET success = 0;
+
+    SELECT created_at INTO stored_time
+    FROM user_otp_attempt
+    WHERE user_id = id
+    ORDER BY created_at DESC
+    LIMIT 1;
+
+    UPDATE user_otp_attempt
+    SET otp_attempt_count = otp_attempt_count + 1
+    WHERE user_id = id AND created_at = stored_time;
+
+    IF TIMESTAMPDIFF(MINUTE, stored_time, NOW()) < otp_exp_time_in THEN
+      SET success = 1;
+    END IF;
+  END IF;
+
+  SELECT success AS result, otp AS otp;
+END//
+
+CREATE PROCEDURE replace_otp (
+  IN new_password_hash VARCHAR(225),
+  IN user_email_in VARCHAR(225)
+)
+BEGIN
+  UPDATE user
+  SET password_hash = new_password_hash, is_otp = 0
+  WHERE email = user_email_in;
+END//
+
+CREATE PROCEDURE get_species_id (IN scientific_name_in VARCHAR(255))
+BEGIN
+  SELECT species_id
+  FROM plant_species
+  WHERE scientific_name = scientific_name_in;
+END//
+
+CREATE PROCEDURE get_user_points (IN user_id_in INT)
+BEGIN
+  SELECT global_points
+  FROM user
+  WHERE user_id = user_id_in;
+END//
+
+CREATE PROCEDURE get_username (IN user_id_in INT)
+BEGIN
+  SELECT username
+  FROM user
+  WHERE user_id = user_id_in;
+END//
+
 
 CREATE PROCEDURE set_user_badge (
   IN user_id_in INT,
@@ -912,6 +913,59 @@ BEGIN
   UPDATE user
   SET username = username_in
   WHERE user_id = user_id_in;
+END//
+
+
+CREATE PROCEDURE get_pending_friend_requests (IN user_id_in INT)
+BEGIN
+  SELECT
+    u.user_id,
+    u.username,
+    u.email,
+    f.created_at
+  FROM friendships f
+  JOIN user u
+    ON u.user_id = f.requester_id
+  WHERE f.addressee_id = user_id_in
+    AND f.status = 'pending'
+  ORDER BY f.created_at DESC;
+END//
+
+CREATE PROCEDURE accept_friend_request (
+  IN requester_id_in INT,
+  IN addressee_id_in INT
+)
+BEGIN
+  UPDATE friendships
+  SET status = 'accepted'
+  WHERE requester_id = requester_id_in
+    AND addressee_id = addressee_id_in
+    AND status = 'pending';
+END//
+
+CREATE PROCEDURE reject_friend_request (
+  IN requester_id_in INT,
+  IN addressee_id_in INT
+)
+BEGIN
+  DELETE FROM friendships
+  WHERE requester_id = requester_id_in
+    AND addressee_id = addressee_id_in
+    AND status = 'pending';
+END//
+
+CREATE PROCEDURE remove_friend (
+  IN user_id_in INT,
+  IN friend_id_in INT
+)
+BEGIN
+  DELETE FROM friendships
+  WHERE (
+      (requester_id = user_id_in AND addressee_id = friend_id_in)
+      OR
+      (requester_id = friend_id_in AND addressee_id = user_id_in)
+    )
+    AND status = 'accepted';
 END//
 
 DELIMITER ;
