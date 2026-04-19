@@ -698,7 +698,6 @@ BEGIN
   ORDER BY u.username ASC;
 END//
 -- gets a users level from their user id - not implemented yet
-delimiter ;
 
     IF external_flag < 1 THEN
       INSERT INTO user_otp_attempt (user_id, created_at)
