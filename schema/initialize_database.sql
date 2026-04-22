@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS identification_submission (
   identification_id INT AUTO_INCREMENT,
   img_url VARCHAR(512) NOT NULL,
   user_id INT,
-  time_submitted TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  time_submitted TIMESTAMP NOT NULL,
   latitude FLOAT,
   longitude FLOAT,
 
@@ -610,10 +610,11 @@ CREATE PROCEDURE add_identification_submission (
   IN lat_in FLOAT,
   IN lon_in FLOAT,
   IN img_url_in VARCHAR(512)
+  IN time_submitted_in TIMESTAMP
 )
 BEGIN
-  INSERT INTO identification_submission (user_id, latitude, longitude, img_url)
-  VALUES (user_id_in, lat_in, lon_in, img_url_in);
+  INSERT INTO identification_submission (user_id, latitude, longitude, img_url, time_submitted)
+  VALUES (user_id_in, lat_in, lon_in, img_url_in, time_submitted_in);
 
   SELECT LAST_INSERT_ID() AS identification_id;
 END//
